@@ -21,9 +21,21 @@ router.post('/', async (req, res) => {
           'Karibu MazaoLink!\nWelcome!\n\nIngiza jina lako kamili:\nEnter your full name:'
         )
       }
-      await supabase.from('farmers').insert({ phone, name: text, registered_via: 'ussd' })
+      // Step 1 — name entered, ask for village
+      if (!text.includes('*')) {
+        return respond(res, 'CON',
+          `Asante, ${text.split(' ')[0]}!\n\nUnaishi wapi? / Your village:\n(Olenguruone, Kiptagich, Molo, Njoro, au nyingine)`
+        )
+      }
+      // Step 2 — name*village entered
+      const [name, village = ''] = text.split('*')
+      await supabase.from('farmers').insert({
+        phone, name,
+        village: village.trim() || null,
+        registered_via: 'ussd'
+      })
       return respond(res, 'END',
-        `✅ Umesajiliwa, ${text.split(' ')[0]}!\nPiga tena *384# kuanza.\nDial *384# again to continue.`
+        `✅ Umesajiliwa, ${name.split(' ')[0]}!\nPiga tena *384# kuanza.\nDial *384# again to continue.`
       )
     }
 

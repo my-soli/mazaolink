@@ -17,6 +17,7 @@ async function dispatch(phone, rawText) {
     if (cmd === 'PRICE')   return price(parts[1])
     if (cmd === 'BALANCE') return balance(phone)
     if (cmd === 'WEATHER') return weather(phone, parts[1])
+    if (cmd === 'VILLAGE') return setVillage(phone, parts.slice(1).join(' '))
     if (cmd === 'HELP')    return help()
   } catch (err) {
     console.error('[farmerCommands]', err)
@@ -259,6 +260,21 @@ async function weather(phone, sub) {
   }
 }
 
+// ── VILLAGE <name> ────────────────────────────────────────────────────────────
+async function setVillage(phone, village) {
+  if (!village) return 'Tuma: VILLAGE JINA_LA_MJI\nMfano: VILLAGE Olenguruone'
+
+  const farmer = await getFarmer(phone)
+  if (!farmer) return 'Bado hujasajiliwa. Tuma: REG JINA LAKO KAMILI'
+
+  const { error } = await supabase.from('farmers')
+    .update({ village: village.charAt(0).toUpperCase() + village.slice(1).toLowerCase() })
+    .eq('phone', phone)
+
+  if (error) throw error
+  return `✅ Eneo lako limehifadhiwa: ${village}.\nSasa WEATHER itakuonyesha hali ya hewa sahihi kwa eneo lako.`
+}
+
 // ── HELP ──────────────────────────────────────────────────────────────────────
 function help() {
   return (
@@ -273,6 +289,7 @@ function help() {
     'BALANCE — Mapato yangu\n' +
     'WEATHER — Hali ya hewa sasa\n' +
     'WEATHER ON/OFF — Arifa za kila siku\n' +
+    'VILLAGE Olenguruone — Weka eneo lako\n' +
     'Piga *384# kwa USSD bila data'
   )
 }
