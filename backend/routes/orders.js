@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const supabase = require('../lib/supabase')
 const { generateRef } = require('../lib/ref')
+const { sendSMS } = require('../lib/sms')
 
 // POST /api/orders — buyer places an order
 router.post('/', async (req, res) => {
@@ -51,6 +52,10 @@ router.post('/', async (req, res) => {
   const table = produce ? 'produce' : 'cattle'
   await supabase.from(table).update({ status: 'matched' }).eq('id', listing.id)
 
+  // Notify farmer via SMS
+  notifyFarmer({ listing, produce, cattle, buyerName, quantity: qty, total, orderId: order.id })
+    .catch(e => console.error('[notify farmer]', e.message))
+
   res.json({
     success: true,
     orderId: order.id,
@@ -89,5 +94,37 @@ router.get('/:id', async (req, res) => {
     createdAt: order.created_at
   })
 })
+
+async function notifyFarmer({ listing, produce, cattle, buyerName, quantity, total, orderId }) {
+  // Get farmer phone via produce/cattle -> farmer_id -> farmers
+  const table = produce ? 'produce' : 'cattle'
+  const id = produce ? produce.id : cattle.id
+
+  const { data } = await supabase
+    .from(table)
+    .select('ref, farmer_id, farmers(phone, name)')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!data?.farmers?.phone) return
+
+  const farmerPhone = data.farmers.phone
+  const ref = data.ref
+  const itemDesc = produce
+    ? `${cap(produce.type)} ${quantity}${produce.unit}`
+    : `${cap(cattle.breed)}`
+
+  const msg =
+    `📦 MazaoLink: Agizo jipya!\n` +
+    `${buyerName} anataka ${itemDesc} yako.\n` +
+    `Bei: KES ${Number(total).toLocaleString()}\n` +
+    `Order #${orderId}\n` +
+    `Atawasiliana nawe hivi karibuni.\n` +
+    `Tuma STATUS ${ref} kuangalia hali.`
+
+  await sendSMS(farmerPhone, msg)
+}
+
+function cap(str = '') { return str.charAt(0).toUpperCase() + str.slice(1) }
 
 module.exports = router

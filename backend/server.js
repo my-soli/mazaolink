@@ -23,13 +23,16 @@ app.use('/api/mpesa', require('./routes/mpesa'))
 app.use('/api/listings', require('./routes/listings'))
 app.use('/api/orders', require('./routes/orders'))
 app.use('/api/buyers', require('./routes/buyers'))
+app.use('/api/cron', require('./routes/cron'))
 
 // Health check — Vercel/Railway will ping this
 app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'MazaoLink API', version: '1.0.0' })
 })
 
-const PORT = process.env.PORT || 3000
-app.listen(PORT, () => console.log(`MazaoLink API running on port ${PORT}`))
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000
+  app.listen(PORT, () => console.log(`MazaoLink API running on port ${PORT}`))
+}
 
 module.exports = app
