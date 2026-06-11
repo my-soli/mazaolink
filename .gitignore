@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment files — NEVER commit these (contain secret keys)
+.env
+.env.local
+.env.*.local
+
+# Next.js build output
+.next/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude memory (local only)
+.claude/
